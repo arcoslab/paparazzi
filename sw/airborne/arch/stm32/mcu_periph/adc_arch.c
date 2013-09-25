@@ -90,6 +90,9 @@
 #if defined(STM32F1)
 #include <libopencm3/stm32/f1/adc.h>
 #define ADC_SAMPLE_TIME ADC_SMPR_SMP_41DOT5CYC
+#elif define(STM32F3)
+#include <libopencm3/stm32/f3/adc.h> // no se porque utilizan 41.5 o 56 ciclos!!!
+#define ADC_SAMPLE_TIME ADC_SMPR1_SMP_61DOT5
 #elif defined(STM32F4)
 #include <libopencm3/stm32/f4/adc.h>
 #define ADC_SAMPLE_TIME ADC_SMPR_SMP_56CYC
@@ -253,13 +256,19 @@ static inline void adc_init_rcc( void )
 #if defined(STM32F1)
   rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_IOPBEN |
                               RCC_APB2ENR_IOPCEN);
+#elif defined(STM32F3)
+  rcc_peripheral_enable_clock(&RCC_AHBENR, ADC_GPIO_CLOCK_PORT);
+  //adc_set_clk_prescale(ADC_CCR_ADCPRE_BY2); NO EXISTE UN PRESCALER PARA EL ADC DEL F3
 #elif defined(STM32F4)
   rcc_peripheral_enable_clock(&RCC_AHB1ENR, ADC_GPIO_CLOCK_PORT);
   adc_set_clk_prescale(ADC_CCR_ADCPRE_BY2);
 #endif
 
   /* Enable ADC peripheral clocks. */
-#ifdef USE_AD1
+#if defined(STM32F3)
+  rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_AHBENR_ADC12EN);// es un mismo registro para el adc1 y el adc2
+#endif
+#ifdef USE_AD1 
   rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_ADC1EN);
 #endif
 #ifdef USE_AD2
@@ -273,6 +282,9 @@ static inline void adc_init_rcc( void )
 #if defined(STM32F1)
   timer_set_period(timer, 0xFF);
   timer_set_prescaler(timer, 0x8);
+#elif defined(STM32F3)
+  timer_set_period(timer, 0xFFFF); //CAMBIAR ESTOS VALORES NO SE DE DONDE LOS ELIGEN
+  timer_set_prescaler(timer, 0x53);
 #elif defined(STM32F4)
   timer_set_period(timer, 0xFFFF);
   timer_set_prescaler(timer, 0x53);
@@ -291,6 +303,9 @@ static inline void adc_init_irq( void )
 #if defined(STM32F1)
   nvic_set_priority(NVIC_ADC1_2_IRQ, 0);
   nvic_enable_irq(NVIC_ADC1_2_IRQ);
+#elif defined(STM32F3)
+  nvic_set_priority(NVIC_ADC_IRQ, 0); //cosa rara existen solo en el libopen de paparazzi no se la version PREGUNTAR!!!!!!!
+  nvic_enable_irq(NVIC_ADC_IRQ);
 #elif defined(STM32F4)
   nvic_set_priority(NVIC_ADC_IRQ, 0);
   nvic_enable_irq(NVIC_ADC_IRQ);
@@ -360,6 +375,8 @@ static inline void adc_init_single(uint32_t adc,
   /* Clear TSVREFE */
 #if defined(STM32F1)
   adc_disable_temperature_sensor(adc);
+#if defined(STM32F3)
+  adc_disable_temperature_sensor();
 #elif defined(STM32F4)
   adc_disable_temperature_sensor();
 #endif
@@ -399,6 +416,8 @@ static inline void adc_init_single(uint32_t adc,
 PRINT_CONFIG_MSG("Info: Using TIM4 for ADC")
 #if defined(STM32F1)
   adc_enable_external_trigger_injected(adc, ADC_CR2_JEXTSEL_TIM4_TRGO);
+#elif defined(STM32F3)
+  adc_enable_external_trigger_injected(adc, ADC_JSQR_JEXTSEL_EVENT_5, ADC_JSQR_JEXTEN_BOTH_EDGES);//pag 221 
 #elif defined(STM32F4)
   adc_enable_external_trigger_injected(adc, ADC_CR2_JEXTSEL_TIM4_TRGO, ADC_CR2_JEXTEN_BOTH_EDGES);
 #endif
@@ -406,6 +425,8 @@ PRINT_CONFIG_MSG("Info: Using TIM4 for ADC")
 PRINT_CONFIG_MSG("Info: Using TIM1 for ADC")
 #if defined(STM32F1)
   adc_enable_external_trigger_injected(adc, ADC_CR2_JEXTSEL_TIM1_TRGO);
+#elif defined(STM32F3)
+  adc_enable_external_trigger_injected(adc, ADC_JSQR_JEXTSEL_EVENT_0, ADC_JSQR_JEXTEN_BOTH_EDGES);
 #elif defined(STM32F4)
   adc_enable_external_trigger_injected(adc, ADC_CR2_JEXTSEL_TIM1_TRGO, ADC_CR2_JEXTEN_BOTH_EDGES);
 #endif
@@ -413,6 +434,8 @@ PRINT_CONFIG_MSG("Info: Using TIM1 for ADC")
 PRINT_CONFIG_MSG("Info: Using default TIM2 for ADC")
 #if defined(STM32F1)
   adc_enable_external_trigger_injected(adc, ADC_CR2_JEXTSEL_TIM2_TRGO);
+#elif defined(STM32F3)
+  adc_enable_external_trigger_injected(adc, ADC_JSQR_JEXTSEL_EVENT_2, ADC_JSQR_JEXTEN_BOTH_EDGES);
 #elif defined(STM32F4)
   adc_enable_external_trigger_injected(adc, ADC_CR2_JEXTSEL_TIM2_TRGO, ADC_CR2_JEXTEN_BOTH_EDGES);
 #endif
@@ -569,6 +592,8 @@ static inline void adc_push_sample(struct adc_buf * buf, uint16_t value) {
  */
 #if defined(STM32F1)
 void adc1_2_isr(void)
+#elif defined(STM32F3)
+void adc_isr(void)
 #elif defined(STM32F4)
 void adc_isr(void)
 #endif
