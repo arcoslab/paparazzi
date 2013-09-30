@@ -258,21 +258,26 @@ static inline void adc_init_rcc( void )
                               RCC_APB2ENR_IOPCEN);
 #elif defined(STM32F3)
   rcc_peripheral_enable_clock(&RCC_AHBENR, ADC_GPIO_CLOCK_PORT);
-  //adc_set_clk_prescale(ADC_CCR_ADCPRE_BY2); NO EXISTE UN PRESCALER PARA EL ADC DEL F3
+  adc_set_clk_prescale(RCC_CFGR2_ADC12PRES_PLL_CLK_DIV_2);
 #elif defined(STM32F4)
   rcc_peripheral_enable_clock(&RCC_AHB1ENR, ADC_GPIO_CLOCK_PORT);
   adc_set_clk_prescale(ADC_CCR_ADCPRE_BY2);
 #endif
 
   /* Enable ADC peripheral clocks. */
+#ifdef USE_AD1
 #if defined(STM32F3)
   rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_AHBENR_ADC12EN);// es un mismo registro para el adc1 y el adc2
-#endif
-#ifdef USE_AD1 
+#else 
   rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_ADC1EN);
 #endif
+#endif
 #ifdef USE_AD2
+#if defined(STM32F3)
+  rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_AHBENR_ADC12EN);// es un mismo registro para el adc1 y el adc2
+#else
   rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_ADC2EN);
+#endif
 #endif
 
   /* Time Base configuration */
@@ -304,8 +309,8 @@ static inline void adc_init_irq( void )
   nvic_set_priority(NVIC_ADC1_2_IRQ, 0);
   nvic_enable_irq(NVIC_ADC1_2_IRQ);
 #elif defined(STM32F3)
-  nvic_set_priority(NVIC_ADC_IRQ, 0); //cosa rara existen solo en el libopen de paparazzi no se la version PREGUNTAR!!!!!!!
-  nvic_enable_irq(NVIC_ADC_IRQ);
+  nvic_set_priority(NVIC_ADC1_2_IRQ, 0); 
+  nvic_enable_irq(NVIC_ADC1_2_IRQ);
 #elif defined(STM32F4)
   nvic_set_priority(NVIC_ADC_IRQ, 0);
   nvic_enable_irq(NVIC_ADC_IRQ);
@@ -361,12 +366,17 @@ static inline void adc_init_single(uint32_t adc,
   adc_disable_discontinuous_mode_injected(adc);
   /* Clear JAUTO */
   adc_disable_automatic_injected_group_conversion(adc);
-  /* Set SCAN */
-  adc_enable_scan_mode(adc);
   /* Enable ADC<X> JEOC interrupt (Set JEOCIE) */
   adc_enable_eoc_interrupt_injected(adc);
+#if !defined(STM32F3)  
+  /* Set SCAN */
+  adc_enable_scan_mode(adc); //revisar un poco más (libopencm3).
   /* Clear AWDIE */
   adc_disable_awd_interrupt(adc);
+#if defined(STM32F3)
+/* Clear AWDIE */
+  adc_disable_all_awd_interrupt(adc);
+#endif
   /* Clear EOCIE */
   adc_disable_eoc_interrupt(adc);
 
@@ -603,8 +613,13 @@ void adc_isr(void)
   struct adc_buf * buf;
 
 #ifdef USE_AD1
+#ifdef STM32F3
+  // Clear Injected End Of Conversion
+  ADC_ISR(ADC1) &= ~ADC_ISR_JEOC;
+#else
   // Clear Injected End Of Conversion
   ADC_SR(ADC1) &= ~ADC_SR_JEOC;
+#endif
   for(channel = 0; channel < NB_ADC1_CHANNELS; channel++) {
     buf = adc1_buffers[channel];
     if(buf) {
@@ -615,8 +630,13 @@ void adc_isr(void)
   adc_new_data_trigger = 1;
 #endif
 #ifdef USE_AD2
+#ifdef STM32F3
+  // Clear Injected End Of Conversion
+  ADC_ISR(ADC2) &= ~ADC_ISR_JEOC;
+#else
   // Clear Injected End Of Conversion
   ADC_SR(ADC2) &= ~ADC_SR_JEOC;
+#endif
   for(channel = 0; channel < NB_ADC2_CHANNELS; channel++) {
     buf = adc2_buffers[channel];
     if(buf) {
