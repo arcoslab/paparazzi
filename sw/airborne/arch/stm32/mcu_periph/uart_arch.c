@@ -104,6 +104,53 @@ void uart_transmit(struct uart_periph* p, uint8_t data ) {
 
 static inline void usart_isr(struct uart_periph* p) {
 
+#if defined(STM32F3)
+
+  if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_TXEIE) != 0) &&
+      ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_TXE) != 0)) {
+    // check if more data to send
+    if (p->tx_insert_idx != p->tx_extract_idx) {
+      usart_send((uint32_t)p->reg_addr,p->tx_buf[p->tx_extract_idx]);
+      p->tx_extract_idx++;
+      p->tx_extract_idx %= UART_TX_BUFFER_SIZE;
+    }
+    else {
+      p->tx_running = FALSE;   // clear running flag
+      USART_CR1((uint32_t)p->reg_addr) &= ~USART_CR1_TXEIE; // Disable TX interrupt
+    }
+  }
+
+  if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
+      ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_RXNE) != 0) &&
+      ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_ORE) == 0) &&
+      ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_NF) == 0) &&
+      ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_FE) == 0)) {
+    uint16_t temp = (p->rx_insert_idx + 1) % UART_RX_BUFFER_SIZE;;
+    p->rx_buf[p->rx_insert_idx] = usart_recv((uint32_t)p->reg_addr);
+    // check for more room in queue
+    if (temp != p->rx_extract_idx)
+      p->rx_insert_idx = temp; // update insert index
+  }
+  else {
+    /* ORE, NE or FE error - read USART_DR reg and log the error */
+    if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
+        ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_ORE) != 0)) {
+      usart_recv((uint32_t)p->reg_addr);
+      p->ore++;
+    }
+    if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
+        ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_NF) != 0)) {
+      usart_recv((uint32_t)p->reg_addr);
+      p->ne_err++;
+    }
+    if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
+        ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_FE) != 0)) {
+      usart_recv((uint32_t)p->reg_addr);
+      p->fe_err++;
+    }
+  }
+#else
+
   if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_TXEIE) != 0) &&
       ((USART_SR((uint32_t)p->reg_addr) & USART_SR_TXE) != 0)) {
     // check if more data to send
@@ -147,6 +194,7 @@ static inline void usart_isr(struct uart_periph* p) {
       p->fe_err++;
     }
   }
+#endif
 }
 
 static inline void usart_enable_irq(uint8_t IRQn) {
