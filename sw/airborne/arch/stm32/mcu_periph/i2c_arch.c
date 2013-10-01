@@ -48,6 +48,15 @@
 
 // Error bit mask
 // XXX: consider moving this define into libopencm3
+#if defined(STM32F3)
+#define I2C_SR1_ERR_MASK (I2C_ISR_ALERT | \
+                          I2C_ISR_TIMEOUT |  \
+                          I2C_ISR_PECERR |   \
+                          I2C_ISR_OVR |      \
+                          I2C_ISR_NACKF |       \
+                          I2C_ISR_ARLO |     \
+                          I2C_ISR_BERR)
+#elif !defined(STM32F3)
 #define I2C_SR1_ERR_MASK (I2C_SR1_SMBALERT | \
                           I2C_SR1_TIMEOUT |  \
                           I2C_SR1_PECERR |   \
@@ -55,6 +64,7 @@
                           I2C_SR1_AF |       \
                           I2C_SR1_ARLO |     \
                           I2C_SR1_BERR)
+#endif
 
 // Bit Control
 
@@ -70,11 +80,14 @@ static inline void __enable_irq(void)   { asm volatile ("cpsie i"); }
 #define __I2C_REG_CRITICAL_ZONE_START	__disable_irq();
 #define __I2C_REG_CRITICAL_ZONE_STOP	__enable_irq();
 
-
 static inline void PPRZ_I2C_SEND_STOP(uint32_t i2c)
 {
   // Man: p722:  Stop generation after the current byte transfer or after the current Start condition is sent.
+#if defined(STM32F3)
+  I2C_CR2(i2c) |= I2C_CR2_STOP;
+#else
   I2C_CR1(i2c) |= I2C_CR1_STOP;
+#endif
 
 #ifdef I2C_DEBUG_LED
   LED2_ON();
@@ -107,6 +120,15 @@ static inline void PPRZ_I2C_SEND_START(struct i2c_periph *periph)
 #endif
 
   // Enable Error IRQ, Event IRQ but disable Buffer IRQ
+#if defined(STM32F3)
+
+  I2C_CR1(i2c) |= I2C_CR1_ERRIE;//en el f3 no existen registros parecidos al ITEVEN O ITBUFEN
+
+  // Issue a new start
+  I2C_CR2(i2c) =  (I2C_CR2_START)
+  I2C_CR1(i2c) =  (I2C_CR1_PE);//preguntar ya que uno esta en el cr2 y otro en cr1 
+
+#else
   I2C_CR2(i2c) |= I2C_CR2_ITERREN;
   I2C_CR2(i2c) |= I2C_CR2_ITEVTEN;
   I2C_CR2(i2c) &= ~ I2C_CR2_ITBUFEN;
@@ -115,6 +137,7 @@ static inline void PPRZ_I2C_SEND_START(struct i2c_periph *periph)
   I2C_CR1(i2c) =  (I2C_CR1_START | I2C_CR1_PE);
   periph->status = I2CStartRequested;
 
+#endif
 }
 
 // STOP
@@ -136,6 +159,90 @@ enum STMI2CSubTransactionStatus {
 // Transfer Sequence Diagram for Master Transmitter
 static inline enum STMI2CSubTransactionStatus stmi2c_send(uint32_t i2c, struct i2c_periph *periph, struct i2c_transaction *trans)
 {
+#ifdef STM32F3
+
+  uint16_t ISR = I2C_ISR(i2c);
+
+  // Start Condition Was Just Generated
+  if (BIT_X_IS_SET_IN_REG( I2C_ISR_BUSY, ISR ) )
+  {
+    I2C_CR1(i2c) |= I2C_CR1_TXIE;
+
+    // In the case of a write transfer
+    if (BIT_X_IS_SET_IN_REG( I2C_ISR_TXIS, ISR ) )
+    {
+      // Send Slave address and wait for ADDR interrupt
+      I2C_TXDR(i2c) = trans->slave_addr;
+      // Document the current Status
+      periph->status = I2CAddrWrSent;
+    }
+  }
+// Address Was Sent
+  else if (BIT_X_IS_SET_IN_REG(I2C_ISR_ADDR, ISR) )
+  {
+    // Now read ISR to clear the ADDR status Bit
+    uint16_t ISR  __attribute__ ((unused)) = I2C_ISR(i2c);
+
+    // Maybe check we are transmitting (did not loose arbitration for instance)
+    // if (! BIT_X_IS_SET_IN_REG(I2C_SR2_TRA, SR2)) { }
+    // update: this should be caught by the ARLO error: so we will not arrive here
+
+    // Send First max 2 bytes
+    I2C_TXDR(i2c) = trans->buf[0];
+    if (trans->len_w > 1)
+    {
+      I2C_TXDR(i2c) = trans->buf[1];
+      periph->idx_buf = 2;
+    }
+    else
+    {
+      periph->idx_buf = 1;
+    }
+
+    // Enable buffer-space available interrupt
+    // only if there is more to send: wait for TXE, no more to send: wait for BTF
+    if ( periph->idx_buf < trans->len_w)
+      //I2C_CR2(i2c) |= I2C_CR2_ITBUFEN;
+
+    // Document the current Status
+    periph->status = I2CSendingByte;
+  }
+  // The buffer is not full anymore AND we were not waiting for BTF
+  //else if ((BIT_X_IS_SET_IN_REG(I2C_ISR_TXE, ISR) ) /*&& (BIT_X_IS_SET_IN_REG(I2C_CR2_ITBUFEN, I2C_CR2(i2c))) */ )
+  //{
+    // Send the next byte
+    //I2C_TXDR(i2c) = trans->buf[periph->idx_buf];
+    //periph->idx_buf++;
+
+    // All bytes Sent? Then wait for BTF instead
+    //if ( periph->idx_buf >= trans->len_w)
+    //{
+      // Not interested anymore to know the buffer has space left
+      //I2C_CR2(i2c) &= ~ I2C_CR2_ITBUFEN;
+      // Next interrupt will be BTF (or error)
+    //}
+  //}
+  // BTF: means last byte was sent
+  else if (BIT_X_IS_SET_IN_REG(I2C_ISR_TC, ISR) )
+  {
+    if (trans->type == I2CTransTx)
+    {
+      // Tell the driver we are ready
+      trans->status = I2CTransSuccess;
+    }
+    // Otherwise we still need to do the receiving part
+
+    return STMI2C_SubTra_Ready;
+  }
+  else // Event Logic Error
+  {
+    return STMI2C_SubTra_Error;
+  }
+
+  return STMI2C_SubTra_Busy;
+
+#else
+  
   uint16_t SR1 = I2C_SR1(i2c);
 
   // Start Condition Was Just Generated
@@ -211,6 +318,8 @@ static inline enum STMI2CSubTransactionStatus stmi2c_send(uint32_t i2c, struct i
   }
 
   return STMI2C_SubTra_Busy;
+
+#endif
 }
 
 // Doc ID 13902 Rev 11 p 714/1072
