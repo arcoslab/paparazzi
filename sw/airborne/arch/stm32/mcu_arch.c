@@ -49,11 +49,13 @@ void mcu_arch_init(void) {
 PRINT_CONFIG_MSG("We are running luftboot, the interrupt vector is being relocated.")
   SCB_VTOR = 0x00002000;
 #endif
-#if INT_CLK == 8000000 //reloj interno
 #if defined(STM32F3)
+#if INT_CLK == 8000000 //reloj interno
 PRINT_CONFIG_MSG("Using 8MHz internal clock to PLL it to 64MHz.") //preguntar ya que según la figura (pag98) de la hoja de datos lo máx que da es 64MHz pero en la lectura dice (pag101) que lo max es de 72MHz
-  rcc_clock_setup_hsi(&hse_8mhz_3v3[CLOCK_64MHZ]);
+  rcc_clock_setup_hsi(&hsi_8mhz[CLOCK_64MHZ]);
 #endif
+#endif
+#if !defined(STM32F3)
 #if EXT_CLK == 8000000
 #if defined(STM32F1)
 PRINT_CONFIG_MSG("Using 8MHz external clock to PLL it to 72MHz.")
@@ -77,5 +79,6 @@ PRINT_CONFIG_MSG("Using 16MHz external clock to PLL it to 168MHz.")
 #endif
 #else
 #error EXT_CLK is either set to an unsupported frequency or not defined at all. Please check!
+#endif
 #endif
 }
