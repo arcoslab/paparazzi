@@ -90,7 +90,7 @@
 #if defined(STM32F1)
 #include <libopencm3/stm32/f1/adc.h>
 #define ADC_SAMPLE_TIME ADC_SMPR_SMP_41DOT5CYC
-#elif define(STM32F3)
+#elif defined(STM32F3)
 #include <libopencm3/stm32/f3/adc.h> // no se porque utilizan 41.5 o 56 ciclos!!!
 #define ADC_SAMPLE_TIME ADC_SMPR1_SMP_61DOT5
 #elif defined(STM32F4)
@@ -372,6 +372,7 @@ static inline void adc_init_single(uint32_t adc,
   /* Set SCAN */
   adc_enable_scan_mode(adc); //revisar un poco más (libopencm3).
   /* Clear AWDIE */
+#endif
   adc_disable_awd_interrupt(adc);
 #if defined(STM32F3)
 /* Clear AWDIE */
@@ -385,7 +386,7 @@ static inline void adc_init_single(uint32_t adc,
   /* Clear TSVREFE */
 #if defined(STM32F1)
   adc_disable_temperature_sensor(adc);
-#if defined(STM32F3)
+#elif defined(STM32F3)
   adc_disable_temperature_sensor();
 #elif defined(STM32F4)
   adc_disable_temperature_sensor();
