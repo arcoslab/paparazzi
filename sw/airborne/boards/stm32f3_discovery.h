@@ -1,11 +1,11 @@
-#ifndef CONFIG_KROOZ_F3_H
-#define CONFIG_KROOZ_F3_H
+#ifndef CONFIG_STM32F3_H
+#define CONFIG_STM32F3_H
 
-#define BOARD_KROOZ
+#define BOARD_STM32F3
 
-/* Krooz/M has a 12MHz external clock and 168MHz internal. */
-#define EXT_CLK 12000000
-#define AHB_CLK 168000000
+/* Stm32f3 has a 8MHz internal clock and 64MHz pll. */
+#define INT_CLK 8000000
+#define AHB_CLK 64000000
 
 #define USE_OPENCM3 1
 
@@ -119,7 +119,7 @@
   }
 #endif // USE_AD1
 
-#define BOARD_HAS_BARO 1
+//#define BOARD_HAS_BARO 1
 
 #define PWM_1_4_TIMER TIM3
 #define PWM_1_4_RCC_TIM RCC_APB1ENR_TIM3EN
@@ -163,4 +163,4 @@
 #define PWM_11_Pin GPIO3
 #define PWM11_OC TIM_OC2
 
-#endif /* CONFIG_KROOZ_F3_H */
+#endif /* CONFIG_STM32F3_H */
