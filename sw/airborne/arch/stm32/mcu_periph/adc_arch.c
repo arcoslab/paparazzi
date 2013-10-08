@@ -92,7 +92,7 @@
 #define ADC_SAMPLE_TIME ADC_SMPR_SMP_41DOT5CYC
 #elif defined(STM32F3)
 #include <libopencm3/stm32/f3/adc.h> // no se porque utilizan 41.5 o 56 ciclos!!!
-#define ADC_SAMPLE_TIME ADC_SMPR1_SMP_61DOT5
+#define ADC_SAMPLE_TIME ADC_SMPR1_SMP_61DOT5CYC
 #elif defined(STM32F4)
 #include <libopencm3/stm32/f4/adc.h>
 #define ADC_SAMPLE_TIME ADC_SMPR_SMP_56CYC
@@ -257,7 +257,8 @@ static inline void adc_init_rcc( void )
   rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_IOPBEN |
                               RCC_APB2ENR_IOPCEN);
 #elif defined(STM32F3)
-  rcc_peripheral_enable_clock(&RCC_AHBENR, ADC_GPIO_CLOCK_PORT);
+  rcc_peripheral_enable_clock(&RCC_AHBENR, RCC_AHBENR_IOPBEN |
+														RCC_AHBENR_IOPCEN);
   adc_set_clk_prescale(RCC_CFGR2_ADC12PRES_PLL_CLK_DIV_2);
 #elif defined(STM32F4)
   rcc_peripheral_enable_clock(&RCC_AHB1ENR, ADC_GPIO_CLOCK_PORT);
@@ -267,14 +268,14 @@ static inline void adc_init_rcc( void )
   /* Enable ADC peripheral clocks. */
 #ifdef USE_AD1
 #if defined(STM32F3)
-  rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_AHBENR_ADC12EN);// es un mismo registro para el adc1 y el adc2
+  rcc_peripheral_enable_clock(&RCC_AHBENR, RCC_AHBENR_ADC12EN);// es un mismo registro para el adc1 y el adc2
 #else 
   rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_ADC1EN);
 #endif
 #endif
 #ifdef USE_AD2
 #if defined(STM32F3)
-  rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_AHBENR_ADC12EN);// es un mismo registro para el adc1 y el adc2
+  rcc_peripheral_enable_clock(&RCC_AHBENR, RCC_AHBENR_ADC12EN);// es un mismo registro para el adc1 y el adc2
 #else
   rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_ADC2EN);
 #endif
@@ -402,23 +403,46 @@ static inline void adc_init_single(uint32_t adc,
 
   rank = 3;
   if (chan1) {
+#ifdef STM32F3
+    adc_set_sample_time(adc, adc_channel_map[0], ADC_SMPR1_SMP_61DOT5CYC);
+    channels[rank] = adc_channel_map[0];
+    rank--;
+#else
     adc_set_sample_time(adc, adc_channel_map[0], ADC_SAMPLE_TIME);
     channels[rank] = adc_channel_map[0];
     rank--;
+#endif
   }
   if (chan2) {
+#ifdef STM32F3
+    adc_set_sample_time(adc, adc_channel_map[1], ADC_SMPR1_SMP_61DOT5CYC);
+    channels[rank] = adc_channel_map[1];
+    rank--;
+#else
     adc_set_sample_time(adc, adc_channel_map[1], ADC_SAMPLE_TIME);
     channels[rank] = adc_channel_map[1];
     rank--;
+#endif
   }
   if (chan3) {
+#ifdef STM32F3
+    adc_set_sample_time(adc, adc_channel_map[2], ADC_SMPR1_SMP_61DOT5CYC);
+    channels[rank] = adc_channel_map[2];
+    rank--;
+#else
     adc_set_sample_time(adc, adc_channel_map[2], ADC_SAMPLE_TIME);
     channels[rank] = adc_channel_map[2];
     rank--;
+#endif
   }
   if (chan4) {
+#ifdef STM32F3
+    adc_set_sample_time(adc, adc_channel_map[3], ADC_SMPR1_SMP_61DOT5CYC);
+    channels[rank] = adc_channel_map[3];
+#else
     adc_set_sample_time(adc, adc_channel_map[3], ADC_SAMPLE_TIME);
     channels[rank] = adc_channel_map[3];
+#endif
   }
 
   adc_set_injected_sequence(adc, num_channels, channels);

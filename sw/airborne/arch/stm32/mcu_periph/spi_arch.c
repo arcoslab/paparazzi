@@ -310,11 +310,20 @@ bool_t spi_resume(struct spi_periph* p, uint8_t slave) {
  *
  *****************************************************************************/
 static void set_default_comm_config(struct locm3_spi_comm* c) {
+
+#if defined(STM32F3)
+  c->br = SPI_CR1_BAUDRATE_FPCLK_DIV_64;
+  c->cpol = SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE;
+  c->cpha = SPI_CR1_CPHA_CLK_TRANSITION_2;
+  c->dff = SPI_CR1_CRCL_8BIT;
+  c->lsbfirst = SPI_CR1_MSBFIRST;
+#else
   c->br = SPI_CR1_BAUDRATE_FPCLK_DIV_64;
   c->cpol = SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE;
   c->cpha = SPI_CR1_CPHA_CLK_TRANSITION_2;
   c->dff = SPI_CR1_DFF_8BIT;
   c->lsbfirst = SPI_CR1_MSBFIRST;
+#endif
 }
 
 static inline uint8_t get_transaction_signature(struct spi_transaction* t) {
@@ -323,6 +332,61 @@ static inline uint8_t get_transaction_signature(struct spi_transaction* t) {
 }
 
 static uint8_t get_comm_signature(struct locm3_spi_comm* c) {
+#if defined(STM32F3)
+  uint8_t sig = 0;
+  if (c->cpol == SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE) {
+    sig |= SPICpolIdleLow;
+  } else {
+    sig |= SPICpolIdleHigh;
+  }
+  if (c->cpha == SPI_CR1_CPHA_CLK_TRANSITION_1) {
+    sig |= (SPICphaEdge1 << 1);
+  } else {
+    sig |= (SPICphaEdge2 << 1);
+  }
+  if (c->lsbfirst == SPI_CR1_MSBFIRST) {
+    sig |= (SPIMSBFirst << 2);
+  } else {
+    sig |= (SPILSBFirst << 2);
+  }
+  uint8_t cdiv = SPIDiv256;
+  switch (c->br) {
+    case SPI_CR1_BAUDRATE_FPCLK_DIV_2:
+      cdiv = SPIDiv2;
+      break;
+    case SPI_CR1_BAUDRATE_FPCLK_DIV_4:
+      cdiv = SPIDiv4;
+      break;
+    case SPI_CR1_BAUDRATE_FPCLK_DIV_8:
+      cdiv = SPIDiv8;
+      break;
+    case SPI_CR1_BAUDRATE_FPCLK_DIV_16:
+      cdiv = SPIDiv16;
+      break;
+    case SPI_CR1_BAUDRATE_FPCLK_DIV_32:
+      cdiv = SPIDiv32;
+      break;
+    case SPI_CR1_BAUDRATE_FPCLK_DIV_64:
+      cdiv = SPIDiv64;
+      break;
+    case SPI_CR1_BAUDRATE_FPCLK_DIV_128:
+      cdiv = SPIDiv128;
+      break;
+    case SPI_CR1_BAUDRATE_FPCLK_DIV_256:
+      cdiv = SPIDiv256;
+      break;
+    default:
+      break;
+  }
+  sig |= (cdiv << 3);
+  if (c->dff == SPI_CR1_CRCL_8BIT) {
+    sig |= (SPIDss8bit << 6);
+  } else {
+    sig |= (SPIDss16bit << 6);
+  }
+  return sig;
+
+#else
   uint8_t sig = 0;
   if (c->cpol == SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE) {
     sig |= SPICpolIdleLow;
@@ -375,10 +439,65 @@ static uint8_t get_comm_signature(struct locm3_spi_comm* c) {
     sig |= (SPIDss16bit << 6);
   }
   return sig;
+#endif
 }
 
 /** Update SPI communication conf from generic paparazzi SPI transaction */
 static void set_comm_from_transaction(struct locm3_spi_comm* c, struct spi_transaction* t) {
+#if defined(STM32F3)
+  
+  if (t->dss == SPIDss8bit) {
+    c->dff = SPI_CR1_CRCL_8BIT;
+  } else {
+    c->dff = SPI_CR1_CRCL_16BIT;
+  }
+  if (t->bitorder == SPIMSBFirst) {
+    c->lsbfirst = SPI_CR1_MSBFIRST;
+  } else {
+    c->lsbfirst = SPI_CR1_LSBFIRST;
+  }
+  if (t->cpha == SPICphaEdge1) {
+    c->cpha = SPI_CR1_CPHA_CLK_TRANSITION_1;
+  } else {
+    c->cpha = SPI_CR1_CPHA_CLK_TRANSITION_2;
+  }
+  if (t->cpol == SPICpolIdleLow) {
+    c->cpol = SPI_CR1_CPOL_CLK_TO_0_WHEN_IDLE;
+  } else {
+    c->cpol = SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE;
+  }
+
+  switch (t->cdiv) {
+    case SPIDiv2:
+      c->br = SPI_CR1_BAUDRATE_FPCLK_DIV_2;
+      break;
+    case SPIDiv4:
+      c->br = SPI_CR1_BAUDRATE_FPCLK_DIV_4;
+      break;
+    case SPIDiv8:
+      c->br = SPI_CR1_BAUDRATE_FPCLK_DIV_8;
+      break;
+    case SPIDiv16:
+      c->br = SPI_CR1_BAUDRATE_FPCLK_DIV_16;
+      break;
+    case SPIDiv32:
+      c->br = SPI_CR1_BAUDRATE_FPCLK_DIV_32;
+      break;
+    case SPIDiv64:
+      c->br = SPI_CR1_BAUDRATE_FPCLK_DIV_64;
+      break;
+    case SPIDiv128:
+      c->br = SPI_CR1_BAUDRATE_FPCLK_DIV_128;
+      break;
+    case SPIDiv256:
+      c->br = SPI_CR1_BAUDRATE_FPCLK_DIV_256;
+      break;
+    default:
+      break;
+  }
+
+#else
+
   if (t->dss == SPIDss8bit) {
     c->dff = SPI_CR1_DFF_8BIT;
   } else {
@@ -428,6 +547,7 @@ static void set_comm_from_transaction(struct locm3_spi_comm* c, struct spi_trans
     default:
       break;
   }
+#endif
 }
 
 
@@ -694,8 +814,13 @@ void spi2_arch_init(void) {
   spi2_dma.dma = DMA1;
   spi2_dma.rx_chan = DMA_CHANNEL4;
   spi2_dma.tx_chan = DMA_CHANNEL5;
+#if defined(STM32F3)
+  spi2_dma.rx_nvic_irq = NVIC_DMA1_CH4_IRQ;
+  spi2_dma.tx_nvic_irq = NVIC_DMA1_CH5_IRQ;
+#else
   spi2_dma.rx_nvic_irq = NVIC_DMA1_CHANNEL4_IRQ;
   spi2_dma.tx_nvic_irq = NVIC_DMA1_CHANNEL5_IRQ;
+#endif   
   spi2_dma.tx_dummy_buf = 0;
   spi2_dma.tx_extra_dummy_dma = FALSE;
   spi2_dma.rx_dummy_buf = 0;
@@ -715,7 +840,7 @@ void spi2_arch_init(void) {
 
   // Enable SPI2 Periph and gpio clocks
   rcc_peripheral_enable_clock(&RCC_APB1ENR, RCC_APB1ENR_SPI2EN);
-
+#if !defined(STM32F3)
   // Configure GPIOs: SCK, MISO and MOSI
   gpio_set_mode(GPIO_BANK_SPI2_SCK, GPIO_MODE_OUTPUT_50_MHZ,
                 GPIO_CNF_OUTPUT_ALTFN_PUSHPULL,
@@ -723,7 +848,7 @@ void spi2_arch_init(void) {
 
   gpio_set_mode(GPIO_BANK_SPI2_MISO, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT,
                 GPIO_SPI2_MISO);
-
+#endif 
   // reset SPI
   spi_reset(SPI2);
 
