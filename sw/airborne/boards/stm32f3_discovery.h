@@ -76,10 +76,29 @@
 //#define DefaultVoltageOfAdc(adc) (0.00625*adc)
 #define DefaultVoltageOfAdc(adc) (0.006185*adc)
 
+/* UART */
+#define UART1_GPIO_AF GPIO_AF7
+#define UART1_GPIO_PORT_RX GPIOA
+#define UART1_GPIO_RX GPIO10
+#define UART1_GPIO_PORT_TX GPIOA
+#define UART1_GPIO_TX GPIO9
+
+#define UART3_GPIO_AF GPIO_AF7
+#define UART3_GPIO_PORT_RX GPIOC
+#define UART3_GPIO_RX GPIO11
+#define UART3_GPIO_PORT_TX GPIOC
+#define UART3_GPIO_TX GPIO10
+
+#define UART5_GPIO_AF GPIO_AF8
+#define UART5_GPIO_PORT_RX GPIOD
+#define UART5_GPIO_RX GPIO2
+#define UART5_GPIO_PORT_TX GPIOC
+#define UART5_GPIO_TX GPIO12
+
 /* Onboard ADCs */
 /*
    ADC1 PC3/ADC13
-   ADC2 PC0/ADC10
+   ADC2 PC0/ADC10USE_AD1
    ADC3 PC1/ADC11
    ADC4 PC5/ADC15
    ADC6 PC2/ADC12
@@ -113,7 +132,8 @@
 
 /* GPIO mapping for ADC1 pins, overwrites the default in arch/stm32/mcu_periph/adc_arch.c */
 // FIXME, this is not very nice, is also stm lib specific
-#ifdef USE_AD1
+#ifndef USE_AD1
+#define USE_AD1
 #define ADC1_GPIO_INIT() {                                          \
     gpio_mode_setup(GPIOC, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO3 | GPIO0 | GPIO2 | GPIO1 | GPIO4 | GPIO5); 	\
   }
@@ -162,5 +182,40 @@
 #define PWM_11_GPIO GPIOB
 #define PWM_11_Pin GPIO3
 #define PWM11_OC TIM_OC2
+
+/* PPM */
+
+#define USE_PPM_TIM2 1
+
+#define PPM_CHANNEL         TIM_IC2
+#define PPM_TIMER_INPUT     TIM_IC_IN_TI1
+#define PPM_IRQ             NVIC_TIM2_IRQ
+//#define PPM_IRQ2            NVIC_TIM2_UP_TIM10_IRQ
+// Capture/Compare InteruptEnable and InterruptFlag
+#define PPM_CC_IE           TIM_DIER_CC2IE
+#define PPM_CC_IF           TIM_SR_CC2IF
+#define PPM_GPIO_PORT       GPIOB
+#define PPM_GPIO_PIN        GPIO3
+#define PPM_GPIO_AF         GPIO_AF1
+
+/* SPI slave mapping */
+
+#define SPI_SELECT_SLAVE0_PORT GPIOA
+#define SPI_SELECT_SLAVE0_PIN GPIO15
+
+#define SPI_SELECT_SLAVE1_PORT GPIOA
+#define SPI_SELECT_SLAVE1_PIN GPIO4
+
+#define SPI_SELECT_SLAVE2_PORT GPIOB
+#define SPI_SELECT_SLAVE2_PIN GPIO12
+
+#define SPI_SELECT_SLAVE3_PORT GPIOC
+#define SPI_SELECT_SLAVE3_PIN GPIO13
+
+#define SPI_SELECT_SLAVE4_PORT GPIOC
+#define SPI_SELECT_SLAVE4_PIN GPIO12
+
+#define SPI_SELECT_SLAVE5_PORT GPIOC
+#define SPI_SELECT_SLAVE5_PIN GPIO4
 
 #endif /* CONFIG_STM32F3_H */

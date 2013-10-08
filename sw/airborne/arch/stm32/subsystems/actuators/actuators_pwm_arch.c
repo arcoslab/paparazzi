@@ -35,6 +35,8 @@ int32_t actuators_pwm_values[ACTUATORS_PWM_NB];
 #if defined(STM32F1)
 //#define PCLK 72000000
 #define PCLK AHB_CLK
+#elif defined(STM32F3)
+#define PCLK AHB_CLK/2
 #elif defined(STM32F4)
 //#define PCLK 84000000
 #define PCLK AHB_CLK/2

@@ -46,16 +46,8 @@ ifndef RADIO_CONTROL_LED
 RADIO_CONTROL_LED = none
 endif
 
-ifndef BARO_LED
-BARO_LED = none
-endif
-
 ifndef AHRS_ALIGNER_LED
 AHRS_ALIGNER_LED = 2
-endif
-
-ifndef GPS_LED
-GPS_LED = none
 endif
 
 ifndef SYS_TIME_LED
@@ -81,9 +73,3 @@ ifndef MODEM_BAUD
 MODEM_BAUD=B57600
 endif
 
-ifndef GPS_PORT
-GPS_PORT=USART3
-endif
-ifndef GPS_BAUD
-GPS_BAUD=B38400
-endif

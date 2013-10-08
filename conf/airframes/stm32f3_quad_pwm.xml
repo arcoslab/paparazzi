@@ -18,7 +18,6 @@
     <subsystem name="radio_control" type="ppm"/>
     <subsystem name="telemetry"     type="transparent"/>
     <subsystem name="imu"           type="aspirin_v2.1"/>
-    <subsystem name="gps"           type="ublox"/>
     <subsystem name="stabilization" type="euler"/>
     <subsystem name="ahrs"          type="int_cmpl_quat"/>
     <subsystem name="ins"           type="hff"/>
