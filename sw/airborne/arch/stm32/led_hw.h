@@ -71,6 +71,16 @@
                   LED_GPIO_PIN(i));               \
     LED_AFIO_REMAP(i);                            \
   }
+#elif defined(STM32F3)
+#define LED_INIT(i) {                             \
+    rcc_peripheral_enable_clock(&RCC_AHBENR,     \
+                                LED_GPIO_CLK(i));	\
+    gpio_mode_setup(LED_GPIO(i),                  \
+                  GPIO_MODE_OUTPUT,			          \
+                  GPIO_PUPD_NONE,                 \
+                  LED_GPIO_PIN(i));               \
+    LED_AFIO_REMAP(i);                            \
+  }
 #endif
 
 #define LED_ON(i) LED_GPIO_ON(i)(LED_GPIO(i), LED_GPIO_PIN(i))
