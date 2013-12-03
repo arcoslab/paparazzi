@@ -155,7 +155,7 @@
    settings=" settings/rotorcraft_basic.xml settings/control/rotorcraft_guidance.xml settings/control/stabilization_rate.xml settings/control/stabilization_att_int.xml"
    gui_color="red"
   />
-<aircraft
+	<aircraft
    name="Twinstar_energyadaptive"
    ac_id="13"
    airframe="airframes/examples/Twinstar_energyadaptive.xml"
@@ -175,4 +175,24 @@
    settings=" settings/rotorcraft_basic.xml settings/estimation/ahrs_int_cmpl_quat.xml settings/control/stabilization_att_int.xml settings/control/stabilization_rate.xml"
    gui_color="blue"
   />
+	<aircraft
+	name="stm32f3_quad"
+	ac_id="27"
+	airframe="airframes/examples/stm32f3/stm32f3_discovery_test.xml"
+	radio="radios/cockpitSX.xml"
+	telemetry="telemetry/default_rotorcraft.xml"
+	flight_plan="flight_plans/rotorcraft_basic.xml"
+	settings=" settings/rotorcraft_basic.xml settings/estimation/ahrs_int_cmpl_quat.xml settings/control/stabilization_att_int.xml settings/control/stabilization_rate.xml"
+	gui_color="blue"
+	/>
+	<aircraft
+	name="stm32f4_quad"
+	ac_id="25"
+	airframe="airframes/examples/stm32f4_discovery_test.xml"
+	radio="radios/cockpitSX.xml"
+	telemetry="telemetry/default_rotorcraft.xml"
+	flight_plan="flight_plans/rotorcraft_basic.xml"
+	settings=" settings/rotorcraft_basic.xml settings/estimation/ahrs_int_cmpl_quat.xml settings/control/stabilization_att_int.xml settings/control/stabilization_rate.xml"
+	gui_color="blue"
+	/>
 </conf>
