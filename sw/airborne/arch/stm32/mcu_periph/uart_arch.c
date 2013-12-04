@@ -128,6 +128,52 @@ void uart_transmit(struct uart_periph* p, uint8_t data ) {
 
 static inline void usart_isr(struct uart_periph* p) {
 
+#if defined(STM32F3)
+  if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_TXEIE) != 0) &&
+      ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_TXE) != 0)) {
+    // check if more data to send
+    if (p->tx_insert_idx != p->tx_extract_idx) {
+      usart_send((uint32_t)p->reg_addr,p->tx_buf[p->tx_extract_idx]);
+      p->tx_extract_idx++;
+      p->tx_extract_idx %= UART_TX_BUFFER_SIZE;
+    }
+    else {
+      p->tx_running = FALSE;   // clear running flag
+      USART_CR1((uint32_t)p->reg_addr) &= ~USART_CR1_TXEIE; // Disable TX interrupt
+    }
+  }
+
+  if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
+      ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_RXNE) != 0) &&
+      ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_ORE) == 0) &&
+      ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_NF) == 0) &&
+      ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_FE) == 0)) {
+    uint16_t temp = (p->rx_insert_idx + 1) % UART_RX_BUFFER_SIZE;;
+    p->rx_buf[p->rx_insert_idx] = usart_recv((uint32_t)p->reg_addr);
+    // check for more room in queue
+    if (temp != p->rx_extract_idx)
+      p->rx_insert_idx = temp; // update insert index
+  }
+  else {
+    /* ORE, NE or FE error - read USART_DR reg and log the error */
+    if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
+        ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_ORE) != 0)) {
+      usart_recv((uint32_t)p->reg_addr);
+      p->ore++;
+    }
+    if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
+        ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_NF) != 0)) {
+      usart_recv((uint32_t)p->reg_addr);
+      p->ne_err++;
+    }
+    if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_RXNEIE) != 0) &&
+        ((USART_ISR((uint32_t)p->reg_addr) & USART_ISR_FE) != 0)) {
+      usart_recv((uint32_t)p->reg_addr);
+      p->fe_err++;
+    }
+  }
+}
+#else
   if (((USART_CR1((uint32_t)p->reg_addr) & USART_CR1_TXEIE) != 0) &&
       ((USART_SR((uint32_t)p->reg_addr) & USART_SR_TXE) != 0)) {
     // check if more data to send
@@ -172,6 +218,7 @@ static inline void usart_isr(struct uart_periph* p) {
     }
   }
 }
+#endif
 
 static inline void usart_enable_irq(uint8_t IRQn) {
   /* Note:
@@ -339,6 +386,38 @@ void usart2_isr(void) { usart_isr(&uart2); }
 
 void uart3_init( void ) {
 
+#if defined(STM32F3)
+  uart_periph_init(&uart3);
+  uart3.reg_addr = (void *)USART3;
+
+  /* init RCC */
+  rcc_peripheral_enable_clock(&RCC_APB1ENR, RCC_APB1ENR_USART3EN);
+
+#if USE_UART3_TX
+  gpio_setup_pin_af(UART3_GPIO_PORT_TX, UART3_GPIO_TX, UART3_GPIO_AF, TRUE);
+#endif
+#if USE_UART3_RX
+  gpio_setup_pin_af(UART3_GPIO_PORT_RX, UART3_GPIO_RX, UART3_GPIO_AF, FALSE);
+#endif
+
+  /* Enable USART interrupts in the interrupt controller */
+  usart_enable_irq(NVIC_USART3_EXTI28_IRQ);
+
+#if UART3_HW_FLOW_CONTROL && defined(STM32F4)
+#warning "USING UART3 FLOW CONTROL. Make sure to pull down CTS if you are not connecting any flow-control-capable hardware."
+  /* setup CTS and RTS pins */
+  gpio_setup_pin_af(UART3_GPIO_PORT_CTS, UART3_GPIO_CTS, UART3_GPIO_AF, FALSE);
+  gpio_setup_pin_af(UART3_GPIO_PORT_RTS, UART3_GPIO_RTS, UART3_GPIO_AF, TRUE);
+#endif
+
+  /* Configure USART Tx,Rx, and hardware flow control*/
+  uart_periph_set_mode(&uart3, USE_UART3_TX, USE_UART3_RX, UART3_HW_FLOW_CONTROL);
+
+  /* Configure USART */
+  uart_periph_set_bits_stop_parity(&uart3, UART3_BITS, UART3_STOP, UART3_PARITY);
+  uart_periph_set_baudrate(&uart3, UART3_BAUD);
+}
+#else
   uart_periph_init(&uart3);
   uart3.reg_addr = (void *)USART3;
 
@@ -369,13 +448,14 @@ void uart3_init( void ) {
   uart_periph_set_bits_stop_parity(&uart3, UART3_BITS, UART3_STOP, UART3_PARITY);
   uart_periph_set_baudrate(&uart3, UART3_BAUD);
 }
+#endif
 
 void usart3_isr(void) { usart_isr(&uart3); }
 
 #endif /* USE_UART3 */
 
 
-#if defined USE_UART4 && defined STM32F4
+#if defined USE_UART4 && defined STM32F4 || defined USE_UART4 && defined STM32F3 
 
 /* by default enable UART Tx and Rx */
 #ifndef USE_UART4_TX
