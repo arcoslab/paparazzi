@@ -56,6 +56,8 @@ static int32_t pflash_program_bytes(struct FlashInfo* flash,
 
 #if defined(STM32F1)
 #define FLASH_SIZE_ MMIO16(0x1FFFF7E0)
+#elif defined(STM32F3)
+#define FLASH_SIZE_ MMIO16(0x0FFF7A22)
 #elif defined(STM32F4)
 #define FLASH_SIZE_ MMIO16(0x1FFF7A22)
 #endif
