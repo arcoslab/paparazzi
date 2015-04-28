@@ -46,18 +46,7 @@ void exti15_10_isr(void) {
   }
 }
 
-void exti2_tsc_isr(void) {
-  lsm_isr();
-}
-
-void exti4_isr(void) {
-  lsm_isr();
-}
-
-void exti9_5_isr(void) {
-  lsm_isr();
-}
-
+/* change position for use in the next methods */
 void lsm_isr(void) {
   /* clear EXTI */
   if(EXTI_PR & EXTI2) {
@@ -73,3 +62,17 @@ void lsm_isr(void) {
     imu_stm32f3_discovery.lsm_a_eoc = TRUE;
   }
 }
+
+void exti2_tsc_isr(void) {
+  lsm_isr();
+}
+
+void exti4_isr(void) {
+  lsm_isr();
+}
+
+void exti9_5_isr(void) {
+  lsm_isr();
+}
+
+

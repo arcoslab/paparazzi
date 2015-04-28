@@ -1121,7 +1121,7 @@ void i2c1_hw_init(void) {
   rcc_set_i2c_clock_hsi(I2C1);
   i2c_reset(I2C1);
 #endif
-#pragma message(STR(I2C_CLOCK_SPEED)) 
+PRINT_CONFIG_VAR(I2C1_CLOCK_SPEED)
 #if defined(STM32F1)
   gpio_set_mode(I2C1_GPIO_PORT, GPIO_MODE_OUTPUT_2_MHZ,
                 GPIO_CNF_OUTPUT_ALTFN_OPENDRAIN,
@@ -1467,9 +1467,7 @@ void i2c_setbitrate(struct i2c_periph *periph, int bitrate)
   // If NOT Busy
   if (i2c_idle(periph))
   {
-    volatile int devider;
-    volatile int risetime;
-
+   	
     uint32_t i2c = (uint32_t) periph->reg_addr;
 
     /*****************************************************
@@ -1489,6 +1487,10 @@ void i2c_setbitrate(struct i2c_periph *periph, int bitrate)
     // 3) Configure rise time register
     ******************************************************/
 #if !defined(STM32F3)
+	/* volatile is used only if stm32f3 is not defined */
+	volatile int devider;
+    volatile int risetime;
+	
     if (bitrate < 3000)
       bitrate = 3000;
 
@@ -1533,6 +1535,10 @@ void i2c_setbitrate(struct i2c_periph *periph, int bitrate)
 
     __enable_irq();
 #else
+
+	/* use bitrate for evade warning */
+	bitrate = bitrate;
+	
     // we do not expect an interrupt as the interface should have been idle, but just in case...
     __disable_irq(); // this code is in user space:
 

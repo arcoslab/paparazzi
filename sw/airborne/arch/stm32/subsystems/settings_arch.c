@@ -240,7 +240,7 @@ static int32_t pflash_program_bytes(struct FlashInfo* flash,
 
   return 0;
 }
-#elif defined(STM32F4)
+#elif defined(STM32F4) || defined(STM32F3)
 static int32_t pflash_program_bytes(struct FlashInfo* flash __attribute__((unused)),
                                     uint32_t   src __attribute__((unused)),
                                     uint32_t   size __attribute__((unused)),

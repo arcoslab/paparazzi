@@ -4,5 +4,6 @@
 #include "subsystems/imu.h"
 
 void imu_stm32f3_discovery_arch_init(void);
+void lsm_isr(void);
 
 #endif /* IMU_STM32F3_DISCOVERY_ARCH_H */
