@@ -114,11 +114,11 @@ static void lsm303dlhc_send_config(struct Lsm303dlhc *lsm)
   if (lsm->i2c_trans.slave_addr == LSM303DLHC_ACC_ADDR) {
     switch (lsm->init_status.acc) {
     case LSM_CONF_ACC_CTRL_REG4_A:
-      lsm303dlhc_i2c_tx_reg(lsm, LSM303DLHC_REG_CTRL_REG4_A, (lsm->config.acc.scale & LSM303DLHC_FS_MASK) | (lsm->config.acc.hres & LSM303DLHC_DEFAULT_HR));
+      lsm303dlhc_i2c_tx_reg(lsm, LSM303DLHC_REG_CTRL_REG4_A, ((lsm->config.acc.scale & LSM303DLHC_FS_MASK) | (lsm->config.acc.hres & LSM303DLHC_DEFAULT_HR)));
       lsm->init_status.acc++;
       break;
     case LSM_CONF_ACC_CTRL_REG1_A:
-      lsm303dlhc_i2c_tx_reg(lsm, LSM303DLHC_REG_CTRL_REG1_A, (lsm->config.acc.rate & LSM303DLHC_ODR_MASK) | (lsm->config.acc.lp_mode & LSM303DLHC_LPen) | LSM303DLHC_Xen | LSM303DLHC_Yen | LSM303DLHC_Zen);
+      lsm303dlhc_i2c_tx_reg(lsm, LSM303DLHC_REG_CTRL_REG1_A, ((lsm->config.acc.rate & LSM303DLHC_ODR_MASK) | (lsm->config.acc.lp_mode & LSM303DLHC_LPen) | LSM303DLHC_Xen | LSM303DLHC_Yen | LSM303DLHC_Zen));
       lsm->init_status.acc++;
       break;
     case LSM_CONF_ACC_CTRL_REG3_A:
@@ -164,14 +164,14 @@ void lsm303dlhc_start_configure(struct Lsm303dlhc *lsm)
     if (lsm->init_status.acc == LSM_CONF_ACC_UNINIT) {
       lsm->init_status.acc++;
       if (lsm->i2c_trans.status == I2CTransSuccess || lsm->i2c_trans.status == I2CTransDone) {
-	lsm303dlhc_send_config(lsm);
+		lsm303dlhc_send_config(lsm);
       }
     }
   } else {
     if (lsm->init_status.mag == LSM_CONF_MAG_UNINIT) {
       lsm->init_status.mag++;
       if (lsm->i2c_trans.status == I2CTransSuccess || lsm->i2c_trans.status == I2CTransDone) {
-	lsm303dlhc_send_config(lsm);
+		lsm303dlhc_send_config(lsm);
       }
     }
   }
@@ -210,8 +210,9 @@ void lsm303dlhc_event(struct Lsm303dlhc *lsm)
       lsm->i2c_trans.status = I2CTransDone;
     }
     else if (lsm->i2c_trans.status == I2CTransSuccess) {
-      lsm->data.vect.x = Int16FromBuf(lsm->i2c_trans.buf,0);
-      lsm->data.vect.y = Int16FromBuf(lsm->i2c_trans.buf,2);
+      // STM32F3 has X-axis and Y-axis inverted
+      lsm->data.vect.x = Int16FromBuf(lsm->i2c_trans.buf,2);
+      lsm->data.vect.y = Int16FromBuf(lsm->i2c_trans.buf,0);
       lsm->data.vect.z = Int16FromBuf(lsm->i2c_trans.buf,4);
       lsm->data_available = TRUE;
       lsm->i2c_trans.status = I2CTransDone;
@@ -223,28 +224,28 @@ void lsm303dlhc_event(struct Lsm303dlhc *lsm)
   {
     if (lsm->i2c_trans.slave_addr == LSM303DLHC_ACC_ADDR) {
       if (lsm->init_status.acc != LSM_CONF_ACC_UNINIT) { // Configuring but not yet initialized
-	if (lsm->i2c_trans.status == I2CTransSuccess || lsm->i2c_trans.status == I2CTransDone) {
-	  lsm->i2c_trans.status = I2CTransDone;
-	  lsm303dlhc_send_config(lsm);
-	}
-	if (lsm->i2c_trans.status == I2CTransFailed) {
-	  lsm->init_status.acc--;
-	  lsm->i2c_trans.status = I2CTransDone;
-	  lsm303dlhc_send_config(lsm); // Retry config (TODO max retry)
-	}
+		if (lsm->i2c_trans.status == I2CTransSuccess || lsm->i2c_trans.status == I2CTransDone) {
+		  lsm->i2c_trans.status = I2CTransDone;
+		  lsm303dlhc_send_config(lsm);
+		}
+		if (lsm->i2c_trans.status == I2CTransFailed) {
+		  lsm->init_status.acc--;
+		  lsm->i2c_trans.status = I2CTransDone;
+		  lsm303dlhc_send_config(lsm); // Retry config (TODO max retry)
+		}
       }
     }
     else {
       if (lsm->init_status.mag != LSM_CONF_MAG_UNINIT) { // Configuring but not yet initialized
-	if (lsm->i2c_trans.status == I2CTransSuccess || lsm->i2c_trans.status == I2CTransDone) {
-	  lsm->i2c_trans.status = I2CTransDone;
-	  lsm303dlhc_send_config(lsm);
-	}
-	if (lsm->i2c_trans.status == I2CTransFailed) {
-	  lsm->init_status.mag--;
-	  lsm->i2c_trans.status = I2CTransDone;
-	  lsm303dlhc_send_config(lsm); // Retry config (TODO max retry)
-	}
+		if (lsm->i2c_trans.status == I2CTransSuccess || lsm->i2c_trans.status == I2CTransDone) {
+		  lsm->i2c_trans.status = I2CTransDone;
+		  lsm303dlhc_send_config(lsm);
+		}
+		if (lsm->i2c_trans.status == I2CTransFailed) {
+		  lsm->init_status.mag--;
+		  lsm->i2c_trans.status = I2CTransDone;
+		  lsm303dlhc_send_config(lsm); // Retry config (TODO max retry)
+		}
       }
     }
   }

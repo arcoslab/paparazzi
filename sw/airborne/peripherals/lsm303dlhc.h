@@ -55,10 +55,10 @@ struct Lsm303dlhcMagConfig {
 
 /** config status states */
 enum Lsm303dlhcAccConfStatus {
-  LSM_CONF_ACC_UNINIT,
-  LSM_CONF_ACC_CTRL_REG4_A,
+  LSM_CONF_ACC_UNINIT,  
   LSM_CONF_ACC_CTRL_REG1_A,
   LSM_CONF_ACC_CTRL_REG3_A,
+  LSM_CONF_ACC_CTRL_REG4_A,
   LSM_CONF_ACC_DONE
 };
 

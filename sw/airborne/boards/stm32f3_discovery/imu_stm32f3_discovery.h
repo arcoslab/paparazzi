@@ -56,20 +56,23 @@
 #define IMU_MAG_Z_SIGN    1
 #endif
 
-/** default gyro sensitivy and neutral from the datasheet
- * MPU with 250 deg/s has 131.072 LSB/(deg/s)
- * sens = 1/131.072 * pi/180 * 2^INT32_RATE_FRAC
- * sens = 1/131.072 * pi/180 * 4096 = 0.5454
- I*/
+
+/**
+ * typical sensitivity at ±250 dps is 0.00875 dps/LSB
+ * X-axis: FF96 LSBs = -106 LSBs = -106 * 0.00875 = -0.93 dps
+ * Y-axis: 0045 LSBs = 69 LSBs = 69 * 0.00875 = 0.6 dps
+ * Z-axis: FFCC LSBs = -52 LSBs = -0.46 dps
+ */
+
 #if !defined IMU_GYRO_P_SENS & !defined IMU_GYRO_Q_SENS & !defined IMU_GYRO_R_SENS
 // FIXME
-#define IMU_GYRO_P_SENS 0.5454
+#define IMU_GYRO_P_SENS -0.93
 #define IMU_GYRO_P_SENS_NUM 2727
 #define IMU_GYRO_P_SENS_DEN 5000
-#define IMU_GYRO_Q_SENS 0.5454
+#define IMU_GYRO_Q_SENS 0.6
 #define IMU_GYRO_Q_SENS_NUM 2727
 #define IMU_GYRO_Q_SENS_DEN 5000
-#define IMU_GYRO_R_SENS 0.5454
+#define IMU_GYRO_R_SENS 0.46
 #define IMU_GYRO_R_SENS_NUM 2727
 #define IMU_GYRO_R_SENS_DEN 5000
 #endif
@@ -80,26 +83,28 @@
 #endif
 
 
-/** default accel sensitivy from the datasheet
- * MPU with 2g has 16384 LSB/g
- * sens = 9.81 [m/s^2] / 16384 [LSB/g] * 2^INT32_ACCEL_FRAC = 0.6131
+/** 
+ * ACCEL has default values in xml file
  */
+ 
 #if !defined IMU_ACCEL_X_SENS & !defined IMU_ACCEL_Y_SENS & !defined IMU_ACCEL_Z_SENS
 // FIXME
-#define IMU_ACCEL_X_SENS 0.6131
+/*
+#define IMU_ACCEL_X_SENS 0.851495564615
 #define IMU_ACCEL_X_SENS_NUM 6131
 #define IMU_ACCEL_X_SENS_DEN 10000
-#define IMU_ACCEL_Y_SENS 0.6131
+#define IMU_ACCEL_Y_SENS 0.844139610103
 #define IMU_ACCEL_Y_SENS_NUM 6131
 #define IMU_ACCEL_Y_SENS_DEN 10000
-#define IMU_ACCEL_Z_SENS 0.6131
+#define IMU_ACCEL_Z_SENS 0.860407859036
 #define IMU_ACCEL_Z_SENS_NUM 6131
 #define IMU_ACCEL_Z_SENS_DEN 10000
 #endif
 #if !defined IMU_ACCEL_X_NEUTRAL & !defined IMU_ACCEL_Y_NEUTRAL & !defined IMU_ACCEL_Z_NEUTRAL
-#define IMU_ACCEL_X_NEUTRAL 0
-#define IMU_ACCEL_Y_NEUTRAL 0
-#define IMU_ACCEL_Z_NEUTRAL 0
+#define IMU_ACCEL_X_NEUTRAL -4223
+#define IMU_ACCEL_Y_NEUTRAL 3481
+#define IMU_ACCEL_Z_NEUTRAL 5610
+*/
 #endif
 
 #ifndef IMU_STM32F3_DISCOVERY_GYRO_AVG_FILTER

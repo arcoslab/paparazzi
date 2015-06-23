@@ -139,10 +139,10 @@ void l3gd20_spi_event(struct L3gd20_Spi *l3g)
     else if (l3g->spi_trans.status == SPITransSuccess) {
       // Successfull reading
       if (bit_is_set(l3g->rx_buf[1], 3)) {
-        // new xyz data available
+        // new yxz data available
         l3g->data_rates.rates.p = Int16FromBuf(l3g->rx_buf,2);
         l3g->data_rates.rates.q = Int16FromBuf(l3g->rx_buf,4);
-	l3g->data_rates.rates.r = Int16FromBuf(l3g->rx_buf,6);
+		l3g->data_rates.rates.r = Int16FromBuf(l3g->rx_buf,6);
         l3g->data_available = TRUE;
       }
       l3g->spi_trans.status = SPITransDone;

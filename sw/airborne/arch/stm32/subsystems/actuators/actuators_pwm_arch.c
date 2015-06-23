@@ -73,6 +73,8 @@
  */
 #define TIMER_APB1_CLK (rcc_ppre1_frequency * 2)
 #define TIMER_APB2_CLK (rcc_ppre2_frequency * 1)
+//#define TIMER_APB1_CLK AHB_CLK
+//#define TIMER_APB2_CLK AHB_CLK
 #endif
 
 

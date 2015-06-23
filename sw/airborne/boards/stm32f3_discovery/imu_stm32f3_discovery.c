@@ -121,11 +121,14 @@ void imu_impl_init( void )
 void imu_periodic( void )
 {
   // Start reading the latest gyroscope data
-  if (!imu_stm32f3_discovery.mpu.config.initialized)
+  //if (!imu_stm32f3_discovery.mpu.config.initialized)
     //mpu60x0_i2c_start_configure(&imu_stm32f3_discovery.mpu);
 
-    //if (!imu_stm32f3_discovery.hmc.initialized)
+  //if (!imu_stm32f3_discovery.hmc.initialized)
     //hmc58xx_start_configure(&imu_stm32f3_discovery.hmc);
+  
+  if (!imu_stm32f3_discovery.l3g.initialized)
+    l3gd20_spi_start_configure(&imu_stm32f3_discovery.l3g);
 
   if (!imu_stm32f3_discovery.lsm_a.initialized)
     lsm303dlhc_start_configure(&imu_stm32f3_discovery.lsm_a);
@@ -207,7 +210,7 @@ void imu_stm32f3_discovery_event( void )
   l3gd20_spi_event(&imu_stm32f3_discovery.l3g);
 
   if (imu_stm32f3_discovery.l3g.data_available) {
-    //struct Int32Vect3 accel;
+    //struct Int32Vect3 gyro;
     RATES_ADD(imu_stm32f3_discovery.rates_sum, imu_stm32f3_discovery.l3g.data_rates.rates);
     //VECT3_COPY(accel, lis302.data.vect);
     imu_stm32f3_discovery.meas_nb++;
@@ -224,6 +227,8 @@ void imu_stm32f3_discovery_event( void )
   // If the LSM303DLHC_ACC I2C transaction has succeeded: convert the data
   lsm303dlhc_event(&imu_stm32f3_discovery.lsm_a);
   if (imu_stm32f3_discovery.lsm_a.data_available) {
+    // ACCEL Z axis => -Z 
+  	imu_stm32f3_discovery.lsm_a.data.vect.z *= -1;
     VECT3_ADD(imu_stm32f3_discovery.accel_sum, imu_stm32f3_discovery.lsm_a.data.vect);
     imu_stm32f3_discovery.meas_nb++; //check?
     imu_stm32f3_discovery.lsm_a.data_available = FALSE;
@@ -234,12 +239,13 @@ void imu_stm32f3_discovery_event( void )
     lsm303dlhc_read(&imu_stm32f3_discovery.lsm_m);
   }
 
-  // If the LSM303DLHC_ACC I2C transaction has succeeded: convert the data
+  // If the LSM303DLHC_MAG I2C transaction has succeeded: convert the data
   lsm303dlhc_event(&imu_stm32f3_discovery.lsm_m);
   if (imu_stm32f3_discovery.lsm_m.data_available) {
     //imu_stm32f3_discovery.meas_nb++; //check?
     imu_stm32f3_discovery.lsm_m.data_available = FALSE;
-    VECT3_ASSIGN(imu.mag_unscaled, imu_stm32f3_discovery.lsm_m.data.vect.y, -imu_stm32f3_discovery.lsm_m.data.vect.x, imu_stm32f3_discovery.lsm_m.data.vect.z);
+    /* Y axis => X , X axis => Y and Z axis => -Z */
+    VECT3_ASSIGN(imu.mag_unscaled, imu_stm32f3_discovery.lsm_m.data.vect.y, imu_stm32f3_discovery.lsm_m.data.vect.x, -imu_stm32f3_discovery.lsm_m.data.vect.z);
     UpdateMedianFilterVect3Int(median_mag, imu.mag_unscaled);
     imu_stm32f3_discovery.mag_valid = TRUE;
 
