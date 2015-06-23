@@ -1,0 +1,72 @@
+<!DOCTYPE flight_plan SYSTEM "flight_plan.dtd">
+
+<flight_plan alt="10" ground_alt="0" lat0="9 56 13.1" lon0="-84 02 38.6" max_dist_from_home="60" name="Stm32f3 test" security_height="2">
+  <header>
+	 #include "autopilot.h"
+  </header>
+  <waypoints>
+    <waypoint name="HOME" x="0.0" y="0.0"/>
+    <waypoint name="CLIMB" x="0.0" y="0.0"/>
+    <waypoint name="STDBY" x="-2.0" y="-2.0"/>
+    <waypoint name="p1" x="0" y="5"/>
+    <waypoint name="p2" x="3" y="3"/>
+    <waypoint name="p3" x="5" y="0"/>
+    <waypoint name="p4" x="-3" y="-3"/>
+  </waypoints>
+  <blocks>
+  		<block name="Wait GPS">
+		  <call fun="NavKillThrottle()"/>
+		  <while cond="!GpsFixValid()"/>
+    	</block>
+	  	<block name="Geo init">
+		  <while cond="LessThan(NavBlockTime(), 10)"/>
+		  <call fun="NavSetGroundReferenceHere()"/>
+		  <!-- <call fun="NavSetAltitudeReferenceHere()"/> -->
+		</block>
+		<block name="Holding point">
+		  <call fun="NavKillThrottle()"/>
+		  <attitude pitch="0" roll="0" throttle="0" vmode="throttle" until="FALSE"/>
+		</block>
+		<block name="Start Engine">
+		  <call fun="NavResurrect()"/>
+		  <attitude pitch="0" roll="0" throttle="0" vmode="throttle" until="FALSE"/>
+		</block>
+		<block name="Takeoff" strip_icon="takeoff.png" strip_button="Takeoff">
+			<exception cond="stateGetPositionEnu_f()->z > 2.0" deroute="circlehome"/>
+			<call fun="NavSetWaypointHere(WP_CLIMB)"/>
+			<stay vmode="climb" climb="0.5" wp="CLIMB"/>
+		</block>
+		<block name="Standby" strip_button="Standby" strip_icon="home.png">
+      		<stay wp="STDBY"/>
+    	</block>
+		<block name="circlehome">
+			<circle radius="5" wp="HOME" until="stage_time > 20"/>
+			<deroute block="go_p2"/>
+	  	</block>
+		<block name="go_p2">
+		  <go wp="p2"/>
+		  <deroute block="route"/>
+		</block>
+		<block name="route">
+		  <go from="p1" hmode="route" wp="p3"/>
+		  <go from="p3" hmode="route" wp="p4"/>
+		  <go from="p4" hmode="route" wp="p1"/>
+		  <deroute block="land here"/>
+		</block>    
+		<block name="land here" strip_button="Land Here" strip_icon="land-right.png">
+		  <call fun="NavSetWaypointHere(WP_HOME)"/>
+		</block>
+		<block name="land">
+		  <go wp="STDBY"/>
+		</block>
+		<block name="flare">
+		  <exception cond="NavDetectGround()" deroute="Holding point"/>
+		  <exception cond="!nav_is_in_flight()" deroute="landed"/>
+		  <call fun="NavStartDetectGround()"/>
+		  <stay climb="-0.8" vmode="climb" wp="STDBY"/>
+		</block>
+		<block name="landed">
+		  <attitude pitch="0" roll="0" throttle="0" vmode="throttle" until="FALSE"/>
+		</block>
+  </blocks>
+</flight_plan>
