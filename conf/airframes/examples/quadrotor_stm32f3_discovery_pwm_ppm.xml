@@ -15,7 +15,6 @@
         <define name="RADIO_MODE" value="RADIO_AUX1"/>
         <!-- <configure name="USE_SECONDARY_PPM_RECEIVER" value="1"/> <\!-- Check this!! -\-> -->
       </subsystem>
-      <!-- MPU6000 is configured to output data at 2kHz, but polled at 512Hz PERIODIC_FREQUENCY -->
       <define name="STM32F3_DISCOVERY_I2C1_FOR_LSM303DLHC"/>
       <define name="STM32F3_DISCOVERY_SPI1_FOR_L3GD20"/>
       <configure name="FLASH_MODE" value="STLINK" />
@@ -38,7 +37,9 @@
 
     <subsystem name="telemetry"     type="transparent"/>
     <subsystem name="imu"           type="stm32f3_discoveryimu"/>
-    <subsystem name="gps"           type="ublox"/>
+    <subsystem name="gps"           type="ublox">
+    	<configure name="GPS_BAUD" value="B38400"/>
+    </subsystem>
     <subsystem name="stabilization" type="int_quat"/>
     <subsystem name="ahrs"          type="int_cmpl_quat">
       <define name="AHRS_GRAVITY_UPDATE_NORM_HEURISTIC" value="TRUE"/>
@@ -113,7 +114,7 @@
   </section>
 
   <section name="INS" prefix="INS_">
-    <define name="BARO_SENS" value="22.3" integer="16"/>
+    <!-- <define name="BARO_SENS" value="22.3" integer="16"/> -->
   </section>
 
   <section name="STABILIZATION_RATE" prefix="STABILIZATION_RATE_">
