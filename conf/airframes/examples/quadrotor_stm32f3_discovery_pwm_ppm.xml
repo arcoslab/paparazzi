@@ -11,8 +11,8 @@
 <airframe name="Quadrotor stm32f3_discovery pwm ppm">
   <firmware name="rotorcraft">
     <target name="ap" board="stm32f3_discovery">
-      <subsystem name="radio_control" type="spektrum"> <!-- Check this!! -->
-        <define name="RADIO_MODE" value="RADIO_AUX1"/>
+      <subsystem name="radio_control" type="ppm"> <!-- Check this!! -->
+        <!-- <define name="RADIO_MODE" value="RADIO_AUX1"/> only for spektrum--> 
         <!-- <configure name="USE_SECONDARY_PPM_RECEIVER" value="1"/> <\!-- Check this!! -\-> -->
       </subsystem>
       <define name="STM32F3_DISCOVERY_I2C1_FOR_LSM303DLHC"/>

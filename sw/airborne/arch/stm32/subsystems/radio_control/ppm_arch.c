@@ -154,6 +154,10 @@ PRINT_CONFIG_MSG("Using TIM8 for PPM input.")
 #define PPM_TIMER_CLK       (rcc_ppre2_frequency * 2)
 #endif
 
+#ifdef STM32F3
+#define PPM_TIMER_CLK       (rcc_ppre1_frequency * 2)
+#endif
+
 
 #else
 #error Unknown PPM input timer configuration.
@@ -307,9 +311,9 @@ void tim1_cc_isr(void) {
   }
 }
 
-#elif USE_PPM_TIM8 && defined(STM32F4)
+#elif USE_PPM_TIM8 && defined(STM32F4) || defined(STM32F3)
 
-#if defined(STM32F1)
+#if defined(STM32F1) || defined(STM32F3)
 void tim8_up_isr(void) {
 #elif defined(STM32F4)
 void tim8_up_tim13_isr(void) {
